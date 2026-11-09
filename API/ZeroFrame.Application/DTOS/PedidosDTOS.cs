@@ -52,7 +52,12 @@ namespace ZeroFrame.Application.DTOS.Pedidos
         [Required(ErrorMessage = "O campo EnderecoId e obrigatorio.")]
         [Range(1, int.MaxValue, ErrorMessage = "O EnderecoId deve ser valido.")]
         public int EnderecoId { get; set; }
+
+        [MinLength(1)]
+        public List<ItemSelecionadoDto>? ItensSelecionados { get; set; }
     }
+
+    public record ItemSelecionadoDto([Range(1, int.MaxValue)] int Id, [Range(1, int.MaxValue)] int Quantidade);
 
     public class PedidoEnderecoGetDto
     {

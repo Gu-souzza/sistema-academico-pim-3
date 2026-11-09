@@ -15,6 +15,7 @@ namespace ZeroFrame.Domain.Entidades
         public string CEP { get; set; } = string.Empty;
         public string? Complemento { get; set; }
         public bool Ativo { get; set; } = true;
+        public bool Principal { get; set; }
         public int UsuarioId { get; set; }
         public Usuario? Usuario { get; set; }
         public List<Pedidos> Pedidos { get; set; } = new();

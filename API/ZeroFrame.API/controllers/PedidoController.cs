@@ -112,7 +112,8 @@ namespace ZeroFrame.API.Controllers
             {
                 pedidoCriado = await _pedidoService.CriarAPartirDoCarrinhoAtivoDoUsuarioAsync(
                     usuarioId,
-                    pedidoCarrinhoPostDto.EnderecoId);
+                    pedidoCarrinhoPostDto.EnderecoId,
+                    pedidoCarrinhoPostDto.ItensSelecionados);
             }
             catch (InvalidOperationException ex)
             {

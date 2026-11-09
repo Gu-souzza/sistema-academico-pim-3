@@ -137,7 +137,8 @@ namespace ZeroFrame.Application.Servicos
             usuario.Email = emailNormalizado;
             usuario.Telefone = usuarioMeusDadosPutDto.Telefone.Trim();
 
-            if (!string.IsNullOrWhiteSpace(usuarioMeusDadosPutDto.NovaSenha))
+            if (usuarioMeusDadosPutDto.SenhaAtual is not null ||
+                !string.IsNullOrWhiteSpace(usuarioMeusDadosPutDto.NovaSenha))
             {
                 if (string.IsNullOrWhiteSpace(usuarioMeusDadosPutDto.SenhaAtual) ||
                     !SenhaValida(usuarioMeusDadosPutDto.SenhaAtual, usuario.Senha))
@@ -145,8 +146,9 @@ namespace ZeroFrame.Application.Servicos
                     throw new BadRequestException("Senha atual invalida.");
                 }
 
-                usuario.Senha = BCrypt.Net.BCrypt.HashPassword(usuarioMeusDadosPutDto.NovaSenha);
             }
+            if (!string.IsNullOrWhiteSpace(usuarioMeusDadosPutDto.NovaSenha))
+                usuario.Senha = BCrypt.Net.BCrypt.HashPassword(usuarioMeusDadosPutDto.NovaSenha);
 
             await _usuarioRepository.AtualizarAsync(usuario);
             return MapearUsuarioGetDto(usuario);

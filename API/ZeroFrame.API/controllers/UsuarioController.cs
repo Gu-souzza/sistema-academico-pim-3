@@ -87,6 +87,16 @@ namespace ZeroFrame.API.Controllers
         }
 
         [Authorize(Roles = "Cliente,Administrador")]
+        [HttpGet("me")]
+        public async Task<ActionResult<UsuarioGetDto>> ObterMeusDados()
+        {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioId))
+                return Unauthorized();
+            var usuario = await _usuarioService.ObterPorIdAsync(usuarioId);
+            return usuario == null || !usuario.Ativo ? Unauthorized() : Ok(usuario);
+        }
+
+        [Authorize(Roles = "Cliente,Administrador")]
         [HttpPut("meus-dados")]
         public async Task<ActionResult<UsuarioGetDto>> AtualizarMeusDados(UsuarioMeusDadosPutDto usuarioMeusDadosPutDto)
         {

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Security.Claims;
 using ZeroFrame.Application.Interfaces;
 using ZeroFrame.Application.Servicos;
 using ZeroFrame.Domain.Account;
@@ -45,6 +46,16 @@ namespace ZeroFrame.Infra.IoC
             })
             .AddJwtBearer(options =>
             {
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var banco = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+                        if (!int.TryParse(context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioId) ||
+                            !await banco.Usuarios.AnyAsync(usuario => usuario.Id == usuarioId && usuario.Ativo))
+                            context.Fail("Conta inativa ou inexistente.");
+                    }
+                };
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,

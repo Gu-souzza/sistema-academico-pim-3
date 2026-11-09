@@ -5,8 +5,15 @@
     const resumo = document.querySelector(".carrinho-summary");
     const finalizarBtn = document.querySelector(".finalizar-compra-button");
     let itensAtuais = [];
+    let finalizando = false;
 
     await carregarCarrinho();
+    window.addEventListener("pageshow", (event) => {
+        if (event.persisted) carregarCarrinho();
+    });
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && !finalizando) carregarCarrinho();
+    });
 
     if (lista) {
         lista.addEventListener("click", async (event) => {
@@ -164,12 +171,14 @@
     }
 
     async function finalizarCompra() {
+        if (finalizando) return;
         if (!itensAtuais.length) {
             ZeroFrameApi.notificar("Carrinho vazio.");
             return;
         }
 
         try {
+            finalizando = true;
             finalizarBtn.disabled = true;
             finalizarBtn.textContent = "Finalizando...";
 
@@ -188,6 +197,7 @@
         } catch (error) {
             mostrarErro(error, "Não foi possível finalizar o pedido.");
         } finally {
+            finalizando = false;
             if (finalizarBtn) {
                 finalizarBtn.disabled = false;
                 finalizarBtn.textContent = "Finalizar compra";

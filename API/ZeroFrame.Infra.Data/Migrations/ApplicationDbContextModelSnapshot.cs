@@ -63,6 +63,28 @@ namespace ZeroFrame.Infra.Data.Migrations
                     b.ToTable("AvaliacoesProdutos");
                 });
 
+            modelBuilder.Entity("ZeroFrame.Domain.Entidades.BuscaRecente", b =>
+                {
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Chave")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime>("AtualizadaEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Termo")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("UsuarioId", "Chave");
+
+                    b.ToTable("BuscasRecentes");
+                });
+
             modelBuilder.Entity("ZeroFrame.Domain.Entidades.Carrinho", b =>
                 {
                     b.Property<int>("Id")
@@ -147,6 +169,9 @@ namespace ZeroFrame.Infra.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<bool>("Principal")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Rua")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -160,6 +185,24 @@ namespace ZeroFrame.Infra.Data.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("enderecos");
+                });
+
+            modelBuilder.Entity("ZeroFrame.Domain.Entidades.Favorito", b =>
+                {
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProdutoId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("UsuarioId", "ProdutoId");
+
+                    b.HasIndex("ProdutoId");
+
+                    b.ToTable("Favoritos");
                 });
 
             modelBuilder.Entity("ZeroFrame.Domain.Entidades.ItemCarrinho", b =>
@@ -483,6 +526,15 @@ namespace ZeroFrame.Infra.Data.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("ZeroFrame.Domain.Entidades.BuscaRecente", b =>
+                {
+                    b.HasOne("ZeroFrame.Domain.Entidades.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ZeroFrame.Domain.Entidades.Carrinho", b =>
                 {
                     b.HasOne("ZeroFrame.Domain.Entidades.Usuario", "Usuario")
@@ -503,6 +555,21 @@ namespace ZeroFrame.Infra.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("ZeroFrame.Domain.Entidades.Favorito", b =>
+                {
+                    b.HasOne("ZeroFrame.Domain.Entidades.Produto", null)
+                        .WithMany()
+                        .HasForeignKey("ProdutoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ZeroFrame.Domain.Entidades.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ZeroFrame.Domain.Entidades.ItemCarrinho", b =>

@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         preencherProduto(produto, variacoes);
         configurarCarrinho(produto, variacoes);
+        configurarFavorito(produtoId);
         configurarAvaliacoes(produtoId);
         carregarRelacionados(produto);
     } catch (error) {
@@ -25,6 +26,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 });
+
+function configurarFavorito(produtoId) {
+    const botao = document.getElementById("favorito-produto");
+    if (!botao) return;
+    const atualizar = (favorito) => {
+        botao.setAttribute("aria-pressed", String(favorito));
+        botao.textContent = favorito ? "Remover dos favoritos" : "Favoritar";
+    };
+    if (ZeroFrameApi.getUsuarioId()) {
+        FavoritoService.listarIds().then((ids) => atualizar(ids.includes(String(produtoId))))
+            .catch((erro) => ZeroFrameApi.notificar(ZeroFrameApi.tratarErro(erro, "Não foi possível carregar os favoritos.")));
+    }
+    botao.addEventListener("click", async () => {
+        if (!ZeroFrameApi.getUsuarioId()) {
+            ZeroFrameApi.redirecionarParaLogin("Entre na sua conta para salvar favoritos.");
+            return;
+        }
+        botao.disabled = true;
+        try {
+            atualizar(await FavoritoService.alternar(produtoId));
+        } catch (erro) {
+            ZeroFrameApi.notificar(ZeroFrameApi.tratarErro(erro, "Não foi possível atualizar os favoritos."));
+        } finally {
+            botao.disabled = false;
+        }
+    });
+}
 
 function preencherProduto(produto, variacoes) {
     const categoria = ProdutoService.getCategoria(produto);

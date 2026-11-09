@@ -39,14 +39,16 @@ namespace ZeroFrame.Infra.Data.Repositorios
         {
             return await _context.enderecos
                 .Include(e => e.Usuario)
-                .FirstOrDefaultAsync(e => e.UsuarioId == usuarioId);
+                .Where(e => e.UsuarioId == usuarioId && e.Ativo)
+                .OrderByDescending(e => e.Principal).ThenBy(e => e.Id)
+                .FirstOrDefaultAsync();
         }
 
         // Conta os enderecos cadastrados para aplicar o limite de criacao no Service.
         public async Task<int> CountByUsuarioIdAsync(int usuarioId)
         {
             return await _context.enderecos
-                .CountAsync(e => e.UsuarioId == usuarioId);
+                .CountAsync(e => e.UsuarioId == usuarioId && e.Ativo);
         }
 
         // Adiciona um novo endereço no banco de dados
@@ -71,7 +73,8 @@ namespace ZeroFrame.Infra.Data.Repositorios
             if (endereco is null)
                 return;
 
-            _context.enderecos.Remove(endereco);
+            endereco.Ativo = false;
+            endereco.Principal = false;
             await _context.SaveChangesAsync();
         }
     }

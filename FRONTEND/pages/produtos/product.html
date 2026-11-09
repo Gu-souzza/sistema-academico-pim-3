@@ -23,6 +23,7 @@
     <script src="../../componentes/api.js"></script>
     <script src="../../componentes/services/produtoService.js"></script>
     <script src="../../componentes/services/carrinhoService.js"></script>
+    <script src="../../componentes/services/favoritoService.js"></script>
     <script src="../../componentes/services/avaliacaoService.js"></script>
     <script src="../../componentes/cart-badge.js" defer></script>
     <script src="./product-api.js"></script>
@@ -140,6 +141,7 @@
                 <p class="main-product-price-method"></p>
                 <div class="main-product-actions">
                     <button class="main-buy-btn">Comprar</button>
+                    <button type="button" id="favorito-produto" class="main-buy-btn" aria-pressed="false">Favoritar</button>
                     <button class="main-add-to-cart-btn">
                         <i class="fa-solid fa-cart-plus"></i>
                         <p class="add-to-cart-text">Adicionar ao carrinho</p>

@@ -99,6 +99,41 @@ API REST desenvolvida em ASP.NET Core com arquitetura em camadas, responsável p
 3. Rode o projeto com `dotnet run`
 4. Acesse a documentação em `http://localhost:5140/swagger`
 
+### Usar a mesma API no desktop e no mobile
+
+O site e o app Expo usam a mesma API ASP.NET Core e a mesma base SQL Server.
+Quem já tem uma conta usa o mesmo e-mail e senha no app. O catálogo, os
+endereços, o carrinho, os pedidos e os favoritos são associados ao usuário
+da API. O app recarrega o carrinho ao abrir a tela e quando volta ao primeiro
+plano.
+
+1. Identifique a conexão `ConnectionStrings__DefaultConnection` usada pela
+   instalação atual do desktop. Use essa mesma base para manter as contas e
+   os pedidos existentes.
+2. Faça um backup antes de aplicar as migrations ao banco em uso. Com a
+   conexão configurada, execute da raiz deste repositório:
+
+   ```powershell
+   dotnet ef database update --project API/ZeroFrame.Infra.Data --startup-project API/ZeroFrame.API
+   ```
+
+3. No app Expo, configure `EXPO_PUBLIC_API_URL` com a URL dessa API seguida
+   de `/api`. No aparelho físico, use o IP da máquina na rede local durante
+   o teste ou a URL HTTPS do ambiente publicado. O desktop continua usando
+   a URL base da API sem o sufixo `/api`.
+4. Entre nos dois clientes com a mesma conta. Adicione no site um produto com
+   tamanho e cor. Abra o carrinho do app e confira o item. Adicione uma
+   segunda variação no app e atualize o carrinho no site. Confira também um
+   pedido já existente em **Meus pedidos**.
+
+Os favoritos antigos do site estavam no navegador. Na página **Favoritos**,
+use **Importar favoritos deste navegador** na conta correta para salvar
+esses itens no servidor. O carrinho e o histórico de pedidos já usam o banco
+do desktop e aparecem no app assim que ele estiver conectado à mesma base.
+
+O app usa o fluxo de pedido do desktop, que registra um pedido pendente e
+usa o preço, o estoque, o frete e o endereço cadastrados na API.
+
 ---
 
 ## 🧩 Minha Contribuição — Engenharia de Software

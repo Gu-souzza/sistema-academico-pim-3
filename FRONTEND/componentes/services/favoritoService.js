@@ -1,49 +1,50 @@
 const FavoritoService = (() => {
     const STORAGE_KEY = "zf_favoritos";
+    const rota = "/api/usuarios/me/favoritos";
 
     function listarLocal() {
         try {
-            return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            const dados = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            return Array.isArray(dados) ? dados : [];
         } catch {
             return [];
         }
     }
 
-    function salvarLocal(favoritos) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(favoritos));
+    async function listarIds() {
+        return ZeroFrameApi.normalizarLista(await ZeroFrameApi.request(rota)).map(String);
     }
 
     async function listar() {
-        const usuarioId = ZeroFrameApi.getUsuarioId();
-        if (!usuarioId) return listarLocal();
-
-        try {
-            const data = await ZeroFrameApi.request(`/api/usuarios/${usuarioId}/favoritos`);
-            return ZeroFrameApi.normalizarLista(data);
-        } catch {
-            return listarLocal();
-        }
-    }
-
-    async function alternar(produto) {
-        const usuarioId = ZeroFrameApi.getUsuarioId();
-        const produtoId = ProdutoService.getProdutoId(produto);
-
-        if (usuarioId) {
+        const ids = await listarIds();
+        const produtos = await Promise.all(ids.map(async (id) => {
             try {
-                return await ZeroFrameApi.request(`/api/usuarios/${usuarioId}/favoritos/${produtoId}`, {
-                    method: "POST"
-                });
-            } catch {
-                // A API atual não expõe favoritos no Swagger; mantemos fallback local.
+                return await ProdutoService.buscarPorId(id);
+            } catch (erro) {
+                if (erro.status === 404) return null;
+                throw erro;
             }
-        }
-
-        const favoritos = listarLocal();
-        const existe = favoritos.some((item) => ProdutoService.getProdutoId(item) === produtoId);
-        salvarLocal(existe ? favoritos.filter((item) => ProdutoService.getProdutoId(item) !== produtoId) : [...favoritos, produto]);
-        return true;
+        }));
+        return produtos.filter(Boolean);
     }
 
-    return { listar, alternar };
+    async function alternar(produtoId) {
+        const id = String(produtoId);
+        const jaSalvo = (await listarIds()).includes(id);
+        await ZeroFrameApi.request(`${rota}/${encodeURIComponent(id)}`, {
+            method: jaSalvo ? "DELETE" : "PUT"
+        });
+        return !jaSalvo;
+    }
+
+    async function importarDoNavegador() {
+        const ids = new Set(listarLocal().map((produto) => Number(ProdutoService.getProdutoId(produto)))
+            .filter((id) => Number.isInteger(id) && id > 0));
+        for (const id of ids) {
+            await ZeroFrameApi.request(`${rota}/${id}`, { method: "PUT" });
+        }
+        localStorage.removeItem(STORAGE_KEY);
+    }
+
+    return { listar, listarIds, alternar, importarDoNavegador, temFavoritosLocais: () => listarLocal().length > 0 };
 })();

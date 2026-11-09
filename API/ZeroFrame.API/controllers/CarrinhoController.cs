@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using ZeroFrame.API.Errors;
 using ZeroFrame.Application.DTOS;
 using ZeroFrame.Application.DTOS.ItemCarrinho;
 using ZeroFrame.Application.Interfaces;
+using ZeroFrame.Infra.Data.Context;
 
 namespace ZeroFrame.API.Controllers
 {
@@ -20,13 +22,16 @@ namespace ZeroFrame.API.Controllers
         // Serviço responsável pelas regras do carrinho.
         private readonly ICarrinhoService _carrinhoService;
         private readonly IItemCarrinhoService _itemCarrinhoService;
+        private readonly ApplicationDbContext _banco;
 
         public CarrinhoController(
             ICarrinhoService carrinhoService,
-            IItemCarrinhoService itemCarrinhoService)
+            IItemCarrinhoService itemCarrinhoService,
+            ApplicationDbContext banco)
         {
             _carrinhoService = carrinhoService;
             _itemCarrinhoService = itemCarrinhoService;
+            _banco = banco;
         }
 
         // GET: api/usuarios/{usuarioId}/carrinho
@@ -131,7 +136,17 @@ namespace ZeroFrame.API.Controllers
             return NoContent();
         }
 
-        // DELETE: api/usuarios/{usuarioId}/carrinho/itens/{itemId}
+        [HttpDelete("itens")]
+        public async Task<ActionResult> LimparCarrinho(int usuarioId)
+        {
+            if (!PodeAcessarUsuario(usuarioId))
+                return Forbid();
+
+            await _banco.item_Carrinhos.Where(item => item.Carrinho!.UsuarioId == usuarioId && item.Carrinho.Ativo)
+                .ExecuteDeleteAsync();
+            return NoContent();
+        }
+
         // Remove um item específico do carrinho do usuário.
         [HttpDelete("itens/{itemId:int}")]
         public async Task<ActionResult> RemoverItemDoCarrinho(int usuarioId, int itemId)

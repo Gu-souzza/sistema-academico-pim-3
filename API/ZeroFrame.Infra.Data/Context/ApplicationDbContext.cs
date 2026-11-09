@@ -27,11 +27,26 @@ namespace ZeroFrame.Infra.Data.Context
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<VariacaoProdutos> variacaoprodutos { get; set; }
         public DbSet<AvaliacaoProduto> AvaliacoesProdutos { get; set; }
+        public DbSet<Favorito> Favoritos { get; set; }
+        public DbSet<BuscaRecente> BuscasRecentes { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Favorito>(entity =>
+            {
+                entity.HasKey(item => new { item.UsuarioId, item.ProdutoId });
+                entity.HasOne<Usuario>().WithMany().HasForeignKey(item => item.UsuarioId);
+                entity.HasOne<Produto>().WithMany().HasForeignKey(item => item.ProdutoId);
+            });
+            modelBuilder.Entity<BuscaRecente>(entity =>
+            {
+                entity.HasKey(item => new { item.UsuarioId, item.Chave });
+                entity.Property(item => item.Chave).HasMaxLength(120);
+                entity.Property(item => item.Termo).HasMaxLength(120);
+                entity.HasOne<Usuario>().WithMany().HasForeignKey(item => item.UsuarioId);
+            });
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);    
         }
     }

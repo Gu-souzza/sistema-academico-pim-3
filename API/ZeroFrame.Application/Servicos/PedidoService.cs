@@ -149,11 +149,15 @@ namespace ZeroFrame.Application.Servicos
         }
 
         // Cria o pedido com os itens montados.
-        public async Task<PedidosGetDto> CriarAPartirDoCarrinhoAsync(int carrinhoId, int enderecoId)
+        public Task<PedidosGetDto> CriarAPartirDoCarrinhoAsync(int carrinhoId, int enderecoId, IReadOnlyList<ItemSelecionadoDto>? selecionados = null)
+            => CriarPedidoComCarrinhoAsync(() => _carrinhoRepository.ObterPorIdAsync(carrinhoId), enderecoId, selecionados);
+
+        private async Task<PedidosGetDto> CriarPedidoComCarrinhoAsync(
+            Func<Task<Carrinho?>> obterCarrinho, int enderecoId, IReadOnlyList<ItemSelecionadoDto>? selecionados)
         {
             return await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                var carrinho = await _carrinhoRepository.ObterPorIdAsync(carrinhoId);
+                var carrinho = await obterCarrinho();
 
                 if (carrinho == null)
                     throw new InvalidOperationException("Carrinho não encontrado.");
@@ -166,9 +170,21 @@ namespace ZeroFrame.Application.Servicos
                 if (!carrinho.Itens.Any())
                     throw new InvalidOperationException("Carrinho vazio não pode gerar pedido.");
 
+                var itensCarrinho = carrinho.Itens.ToList();
+                if (selecionados is not null)
+                {
+                    var porId = selecionados.ToLookup(item => item.Id);
+                    itensCarrinho = itensCarrinho.Where(item => porId.Contains(item.Id)).ToList();
+                    if (itensCarrinho.Count != selecionados.Count ||
+                        itensCarrinho.Any(item => porId[item.Id].Single().Quantidade != item.Quantidade))
+                        throw new InvalidOperationException("O carrinho mudou. Atualize a tela e revise os itens antes de comprar.");
+                }
+                if (itensCarrinho.Count == 0)
+                    throw new InvalidOperationException("Selecione pelo menos um item do carrinho.");
+
                 var itensPedido = new List<ItemPedido>();
 
-                foreach (var itemCarrinho in carrinho.Itens)
+                foreach (var itemCarrinho in itensCarrinho)
                 {
                     var variacao = await _variacaoRepository.ObterPorIdAsync(itemCarrinho.VariacaoProdutoId);
 
@@ -209,25 +225,22 @@ namespace ZeroFrame.Application.Servicos
 
                 var subtotalPedido = pedido.Itens.Sum(item => item.Quantidade * item.PrecoUnitario);
                 pedido.ValorTotal = subtotalPedido + _freteService.CalcularFrete(subtotalPedido);
-                carrinho.Ativo = false;
+                if (itensCarrinho.Count == carrinho.Itens.Count)
+                    carrinho.Ativo = false;
+                else
+                    foreach (var item in itensCarrinho)
+                        carrinho.Itens.Remove(item);
 
                 await _pedidoRepository.CriarPedidoAsync(pedido);
                 await _carrinhoRepository.AtualizarAsync(carrinho);
 
                 return MapearPedidoGetDto(pedido);
-            });
+            }, System.Data.IsolationLevel.Serializable);
         }
 
         // Busca todos os pedidos de um usuário específico.
-        public async Task<PedidosGetDto> CriarAPartirDoCarrinhoAtivoDoUsuarioAsync(int usuarioId, int enderecoId)
-        {
-            var carrinho = await _carrinhoRepository.ObterAtivoPorUsuarioAsync(usuarioId);
-
-            if (carrinho == null)
-                throw new InvalidOperationException("Carrinho ativo não encontrado para este usuário.");
-
-            return await CriarAPartirDoCarrinhoAsync(carrinho.Id, enderecoId);
-        }
+        public Task<PedidosGetDto> CriarAPartirDoCarrinhoAtivoDoUsuarioAsync(int usuarioId, int enderecoId, IReadOnlyList<ItemSelecionadoDto>? selecionados = null)
+            => CriarPedidoComCarrinhoAsync(() => _carrinhoRepository.ObterAtivoPorUsuarioAsync(usuarioId), enderecoId, selecionados);
 
         // metodo para cancelar um pedido, atualizando o estoque das variações dos produtos e o status do pedido.
         public async Task CancelarAsync(int id)

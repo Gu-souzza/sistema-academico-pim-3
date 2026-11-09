@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using ZeroFrame.Domain.Interfaces;
 using ZeroFrame.Infra.Data.Context;
 
@@ -16,13 +17,13 @@ namespace ZeroFrame.Infra.Data.UnitOfWork
 
         // Se tudo der certo, confirma a transação.
         // Se ocorrer qualquer erro, desfaz tudo com Rollback.
-        public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation)
+        public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation, IsolationLevel isolation = IsolationLevel.ReadCommitted)
         {
             var strategy = _context.Database.CreateExecutionStrategy();
 
             return await strategy.ExecuteAsync(async () =>
             {
-                await using var transaction = await _context.Database.BeginTransactionAsync();
+                await using var transaction = await _context.Database.BeginTransactionAsync(isolation);
 
                 try
                 {

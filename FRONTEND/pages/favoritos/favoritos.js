@@ -4,6 +4,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     const lista = document.querySelector(".favorites-list");
     if (!lista) return;
 
+    if (FavoritoService.temFavoritosLocais()) {
+        const importar = document.createElement("button");
+        importar.type = "button";
+        importar.textContent = "Importar favoritos deste navegador";
+        importar.addEventListener("click", async () => {
+            if (!window.confirm("Importar os favoritos deste navegador para a conta aberta?")) return;
+            importar.disabled = true;
+            try {
+                await FavoritoService.importarDoNavegador();
+                window.location.reload();
+            } catch (erro) {
+                importar.disabled = false;
+                ZeroFrameApi.notificar(ZeroFrameApi.tratarErro(erro, "Não foi possível importar os favoritos."));
+            }
+        });
+        lista.before(importar);
+    }
+
     try {
         ZeroFrameApi.mostrarCarregando(lista, "Carregando favoritos...");
         const favoritos = await FavoritoService.listar();
